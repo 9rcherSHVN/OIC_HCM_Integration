@@ -43,8 +43,9 @@ All Oracle HCM custom integrations use **Scheduled App-Driven Orchestration** in
 
 ### 1.2 Integration Naming Convention
 
-
+```Text
 *{Type}_{Domain}_{Direction}_{Source}_{Version}*
+```
 
 | Token | Values | Meaning |
 | --- | --- | --- |
