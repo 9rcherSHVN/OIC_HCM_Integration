@@ -43,9 +43,9 @@ All Oracle HCM custom integrations use **Scheduled App-Driven Orchestration** in
 
 ### 1.2 Integration Naming Convention
 
-```text
-{Type}_{Domain}_{Direction}_{Source}_{Version}
-```text
+
+*{Type}_{Domain}_{Direction}_{Source}_{Version}*
+
 | Token | Values | Meaning |
 | --- | --- | --- |
 | `Type` | `IFP` | Integration Flow Process — standalone, scheduled |
@@ -63,9 +63,9 @@ IFP_JOB_FROM_DW_01.00.0000          ← Job domain integration
 IFS_FBDI_SUBMIT_POLL_01.00.0000     ← Shared FBDI sub-integration
 IFS_BIP_SRCID_PREFETCH_01.00.0000   ← Shared source ID pre-fetch sub-integration
 IFS_ERROR_REPORT_01.00.0000         ← Shared error report sub-integration
-```text
----
+```
 
+---
 ### 1.3 Orchestration Pattern: Coordinator + Domain + Shared Sub-Integrations
 
 ```text
@@ -86,7 +86,7 @@ Each domain integration calls shared sub-integrations:
   IFS_FBDI_SUBMIT_POLL    ← UCM upload + importAndLoadData + ESS poll + getDataSetStatus
   IFS_BIP_SRCID_PREFETCH  ← Bulk BI Publisher lookup (returns XML result set pre-loop)
   IFS_ERROR_REPORT        ← BIP error report + UCM upload + SFTP audit write
-```text
+```
 **Why coordinator over time-stagger:**
 
 Time-stagger assumes each integration finishes within a fixed window. The coordinator pattern uses the actual completion signal — if an upstream domain integration runs long (large file, HDL queue backlog), downstream integrations wait. If a critical upstream integration fails, the coordinator can halt all subsequent integrations to prevent cascading partial loads.
@@ -135,7 +135,7 @@ Get-ChildItem -Recurse -Include "*.jca" | ForEach-Object {
     }
 }
 # Pass criterion: zero warnings
-```text
+```
 ---
 
 ### 2.3 Standard Connection Property Reference
@@ -151,7 +151,7 @@ Get-ChildItem -Recurse -Include "*.jca" | ForEach-Object {
 # SFTP FTP Adapter
 %%{PREFIX}_SFTP_Host           → {sftp-hostname}
 %%{PREFIX}_SFTP_Port           → 22
-```text
+```
 > The `targetWSDLURL` on the BIP SOAP adapter connection is the **only** place the BI Publisher hostname appears. No JCA file references any BIP URL.
 
 ---
@@ -189,7 +189,7 @@ dvm:lookupValue('Common_Utility_Lookup', 'RICE_ID', $Var_Rice_Id, 'FusionURL', '
 
 <!-- INCORRECT — literal bypasses runtime RICE_ID variable; do not use -->
 dvm:lookupValue('Common_Utility_Lookup', 'RICE_ID', 'I-03', 'FusionURL', '')
-```text
+```
 `$Var_Rice_Id` is set in the first ASSIGNMENT node immediately after the SCHEDULE_RECEIVE, before any DVM lookup executes.
 
 ---
@@ -211,7 +211,7 @@ SCHEDULE_RECEIVE
        var_DistributionList = dvm:lookupValue(..., 'IT_Distribution_List1', '')
        var_HDLStageBase     = dvm:lookupValue(..., 'HDLStageBasePath', '')
        var_MaxPollCount     = dvm:lookupValue(..., 'MaxPollCount', '36')
-```text
+```
 > If any lookup returns empty string for a critical field (`FileName`, `DirectoryName`, `FusionURL`), the integration must THROW a `CONFIG_FAIL` fault immediately before any SFTP or HCM operation is attempted.
 
 ---
@@ -260,7 +260,7 @@ SCHEDULE_RECEIVE
               ERROR/PARTIAL      → Error_Directory
  Step 13  NOTIFY (outcome email)
  Step 14  [Global CATCH_ALL]    → see Section 6
-```text
+```
 ---
 
 ### 4.2 Shared Sub-Integration: `IFS_FBDI_SUBMIT_POLL`
@@ -286,7 +286,7 @@ This sub-integration encapsulates the entire FBDI submission chain. It is invoke
 6. HCM getDataSetStatus      → extract ImportSuccess, ImportFailed, LoadSuccess, LoadFailed
 7. RETURN structured output:
      ESSStatus, ImportSuccess, ImportFailed, LoadSuccess, LoadFailed, UCMContentId, ESSJobId
-```text
+```
 ---
 
 ### 4.3 Shared Sub-Integration: `IFS_BIP_SRCID_PREFETCH`
@@ -310,12 +310,12 @@ Eliminates the O(n × k) per-record BI Publisher call pattern by performing **on
                                WT_SourceSystemId, WA_SourceSystemId, Manager_PersonNumber}
 2. STAGE_WRITE               → write XML result to {HDLStageBasePath}/srcids/srcids.xml
 3. RETURN: stagePath of the written file
-```text
+```
 **Inside the domain integration FOR loop**, after reading each record, use an XPath key lookup to retrieve the pre-fetched IDs:
 
 ```xpath
 $srcIdDoc/SourceSystemIDs/Person[PersonNumber = $currentPersonNumber]/WR_SourceSystemId
-```text
+```
 **Result:** 1 BIP call per run regardless of file size. O(1) complexity.
 
 ---
@@ -331,14 +331,14 @@ HDL zip (upload to UCM)   : {Domain}_HDL_{YYYYMMDD}.zip
 Error log text            : {Domain}_Error_{YYYYMMDD}.log
 Error log zip             : {Domain}_Error_{YYYYMMDD}.zip
 Monthly audit log (SFTP)  : /Audit/{Domain}/audit_{YYYY-MM}.csv
-```text
+```
 **HDL section structure (pipe-delimited):**
 
 ```text
 METADATA|Worker|SourceSystemOwner|SourceSystemId|EffectiveStartDate|PersonNumber|...
 MERGE|HRC_SQLLOADER|PER_1001|2026-01-01|1001|...
 MERGE|HRC_SQLLOADER|PER_1002|2026-01-01|1002|...
-```text
+```
 **Business key rules:**
 
 | Field | Standard Value | Notes |
@@ -365,7 +365,7 @@ Load Order    HDL Object
      7        Assignment
      8        AssignmentSupervisor   ← Submit in a separate second HDL load
      9        ExternalIdentifier
-```text
+```
 > **AssignmentSupervisor** must be submitted in a **separate second `importAndLoadData` call**, executed only after the first load (Steps 1–7 above) has fully completed with `SUCCEEDED` or `WARNING` status. A failed first load must block the AssignmentSupervisor submission.
 
 ---
@@ -390,7 +390,7 @@ For complex integrations with multiple HDL object types, use XSL transformation 
     <WorkRelationship action="MERGE">...</WorkRelationship>
   </WorkRelationships>
 </HCMPayload>
-```text
+```
 **Step 2 — After the FOR loop, apply one XSL per HDL section:**
 
 ```xslt
@@ -401,7 +401,7 @@ METADATA|Worker|SourceSystemOwner|SourceSystemId|EffectiveStartDate|PersonNumber
 MERGE|HRC_SQLLOADER|<xsl:value-of select="concat('PER_', PersonNumber)"/>|<xsl:value-of select="EffectiveStartDate"/>|<xsl:value-of select="PersonNumber"/>|...
   </xsl:for-each>
 </xsl:if>
-```text
+```
 **Step 3 — One STAGE_WRITE per HDL section** writes the XSL output to the staging file.
 
 **Benefits over line-by-line STAGE_WRITE:**
@@ -464,7 +464,7 @@ POST-WHILE:
       Yes → THROW fault: code=ESS_POLL_TIMEOUT,
                          detail="ESS Job {essJobId} did not reach terminal status after {pollCount} polls"
       No  → continue to getDataSetStatus
-```text
+```
 ---
 
 ### 5.3 ESS Service Endpoint Consistency Rule
@@ -521,7 +521,7 @@ Level 3: Global CATCH_ALL
            (append error/fault record to monthly audit log — see Section 9)
      4. NOTIFY: FAULT template
      5. END
-```text
+```
 ---
 
 ### 6.2 Fault Code Reference
@@ -601,7 +601,7 @@ Add an `ACTIVITY_STREAM_LOGGER` node at each of the following 6 milestone points
   "pollCount": "4",
   "elapsedSeconds": "42"
 }
-```text
+```
 > **Do not use free-text activity stream messages.** JSON format enables log parsing by monitoring tools and OIC support teams.
 
 ---
@@ -651,7 +651,7 @@ OIC Instance ID : {instanceId}
 No source file was present on SFTP. No records were processed.
 This notification is informational. If a file was expected, verify the data warehouse
 export process.
-```text
+```
 #### Template: SUCCESS
 
 ```text
@@ -666,7 +666,7 @@ ESS Job ID      : {essJobId}
 Records Total   : {totalRecords}
 Records Success : {successRecords}
 Records Failed  : {errorRecords}
-```text
+```
 #### Template: ERROR or PARTIAL (HTML)
 
 ```html
@@ -688,7 +688,7 @@ Records Failed  : {errorRecords}
 <p>Error log also archived at SFTP: {errorArchivePath}</p>
 </body>
 </html>
-```text
+```
 #### Template: FAULT
 
 ```text
@@ -704,7 +704,7 @@ Fault Detail    : {faultDetail}
 
 Action required: Review OIC instance {instanceId} in the monitoring console.
 The source file has been moved to the error archive directory.
-```text
+```
 ---
 
 ### 8.3 HTML Email Attribute Rule — Mandatory
@@ -721,7 +721,7 @@ Every `href` attribute in any HTML notification template **must** use quoted val
 The `errorReportUrl` placeholder value is pre-constructed in the flow as:
 ```xpath
 concat($var_Environment_Link, 'cs/idcplg?IdcService=GET_FILE&amp;dID=', $var_Document_Id)
-```text
+```
 ---
 
 ### 8.4 Notification Subject Prefix Convention
@@ -730,7 +730,7 @@ All notification subjects must be prefixed with `[HCM Integration]` to enable em
 
 ```text
 [HCM Integration] [{environmentType}] {integrationName} — {outcome} ({runDate})
-```text
+```
 This allows operations staff to create inbox rules that:
 - Route all HCM integration emails to a dedicated folder
 - Flag `SYSTEM FAULT` subjects for immediate escalation
@@ -747,13 +747,13 @@ At the end of every integration run — including fault paths via the global CAT
 **Path pattern:**
 ```text
 /Audit/{Domain}/audit_{YYYY-MM}.csv
-```text
+```
 **CSV structure:**
 
-```csv
+```
 RunTimestamp,IntegrationCode,RiceId,SourceFile,TotalRecords,SuccessRecords,FailedRecords,ESSJobId,ESSStatus,UCMErrorDocId,OICInstanceId,FinalStatus,ArchivePath,DurationSeconds
 2026-05-14T22:35:47,IFP_EMPLO,I-03,employees_20260514.csv,1200,1188,12,12345678,SUCCEEDED,EMPLERR20260514,IFP_EMPLO_XXXX,PARTIAL,/Outbound/error/,127
-```text
+```
 **Column definitions:**
 
 | Column | Source |
